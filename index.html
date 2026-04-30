@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MboRijnland</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#f4f4f4;
+}
+
+#app{
+  display:none;
+}
+
+#login{
+  height:100vh;
+  background:#9cab2f;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.box{
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  width:90%;
+  max-width:350px;
+  box-shadow:0 4px 15px #0003;
+}
+
+input,button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  font-size:16px;
+  box-sizing:border-box;
+}
+
+button{
+  background:#9cab2f;
+  border:0;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.header{
+  background:#9cab2f;
+  padding:22px;
+  font-size:25px;
+  display:flex;
+  gap:20px;
+  align-items:center;
+}
+
+.menu-btn{
+  font-size:28px;
+  cursor:pointer;
+}
+
+.side-menu{
+  position:fixed;
+  left:-260px;
+  top:0;
+  width:260px;
+  height:100%;
+  background:white;
+  box-shadow:2px 0 10px #0004;
+  transition:.3s;
+  z-index:10;
+}
+
+.side-menu.open{
+  left:0;
+}
+
+.side-menu h2{
+  padding:20px;
+  margin:0;
+  background:#9cab2f;
+}
+
+.side-menu div{
+  padding:17px 22px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+
+.container{
+  max-width:650px;
+  margin:auto;
+}
+
+.date{
+  background:#e8e8e8;
+  padding:12px;
+  font-weight:bold;
+  font-size:20px;
+  border-bottom:1px solid #ccc;
+}
+
+.card{
+  background:white;
+  border-bottom:1px solid #ddd;
+  padding:16px;
+  font-size:18px;
+}
+
+.room{
+  color:#666;
+}
+
+.profile{
+  text-align:center;
+}
+
+.profile img{
+  width:120px;
+  height:120px;
+  border-radius:50%;
+  object-fit:cover;
+  border:4px solid #9cab2f;
+  cursor:pointer;
+}
+
+.info-title{
+  font-weight:bold;
+  color:#555;
+  margin-bottom:5px;
+}
+
+.circle{
+  width:190px;
+  height:190px;
+  border-radius:50%;
+  margin:25px auto;
+  background:conic-gradient(#9cab2f 0% 84%, #ddd 84% 100%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.circle-inner{
+  width:130px;
+  height:130px;
+  background:white;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:34px;
+  font-weight:bold;
+}
+
+.small-text{
+  color:#666;
+  font-size:15px;
+}
+</style>
+</head>
+
+<body>
+
+<section id="login">
+  <div class="box">
+    <h1>MboRijnland</h1>
+    <p>Log in met je schoolaccount</p>
+
+    <input id="username" placeholder="E-mailadres">
+    <input id="password" type="password" placeholder="Wachtwoord">
+    <button onclick="login()">Inloggen</button>
+  </div>
+</section>
+
+<section id="app">
+  <div class="side-menu" id="menu"></div>
+
+  <div class="header">
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    <div id="pageTitle">Rooster</div>
+  </div>
+
+  <div class="container" id="content"></div>
+</section>
+
+<script>
+let currentUser = null;
+
+const users = {
+  "0912250@mborijnland.nl": {
+    password: "Annamaria20062006!",
+    role: "student"
+  },
+  admin: {
+    password: "admin123",
+    role: "admin"
+  }
+};
+
+let data = {
+  rooster: [
+    {
+      date: "dinsdag 28 april 2026",
+      time: "09:00 - 15:00",
+      title: "SGP Lecture & Workshops",
+      room: "OV1.61, RZ2.25, SL4.94"
+    },
+    {
+      date: "donderdag 30 april 2026",
+      time: "09:00 - 15:00",
+      title: "Guest lecture and Showcasing games",
+      room: "SL5.84"
+    }
+  ],
+
+  cijfers: [
+    { vak: "Pedagogiek", toets: "Portfolio", cijfer: "8.1" },
+    { vak: "Nederlands", toets: "Schrijfopdracht", cijfer: "7.4" },
+    {vak: "Rekenen", toets: "Formules", cijfer: "7.1"},
+    {vak: "Nederlands", toets: "Luister Opdracht", cijfer: "6.2"},
+    {vak: "D&P", toets: "Portfolio", cijfer: "7.7"},
+    {vak: "Zorg", toets: "Presentatie", cijfer: "8.2" }
+  ],
+
+  huiswerk: [
+    { vak: "Nederlands", opdracht: "Maak opdracht 241 t/m 247 tijdens de les, wat niet af is thuis afmaken." },
+    { vak: "Rekenen", opdracht: "opdracht 58 t/m 64." },
+    { vak: "Zorg", opdracht: "Tijdens de les gaan we aan de slag met het presentaties van de groepen. Op Teams heb ik alles ingezet" }
+  ],
+
+  berichten: [
+    { titel: "Welkom", tekst: "Welkom in de MboRijnland app." }
+  ]
+};
+
+function login(){
+  let u = document.getElementById("username").value.trim();
+  let p = document.getElementById("password").value;
+
+  if(!users[u] || users[u].password !== p){
+    alert("E-mailadres of wachtwoord is onjuist.");
+    return;
+  }
+
+  currentUser = users[u];
+
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  renderMenu();
+  showPage("rooster");
+}
+
+function renderMenu(){
+  document.getElementById("menu").innerHTML = `
+    <h2>MboRijnland</h2>
+    <div onclick="showPage('rooster')">Rooster</div>
+    <div onclick="showPage('cijfers')">Cijfers</div>
+    <div onclick="showPage('huiswerk')">Huiswerk</div>
+    <div onclick="showPage('berichten')">Berichten</div>
+    <div onclick="showPage('aanwezigheid')">Aanwezigheid</div>
+    <div onclick="showPage('student')">Gegevens student</div>
+    <div onclick="logout()">Uitloggen</div>
+  `;
+}
+
+function showPage(page){
+  document.getElementById("pageTitle").innerText = page.charAt(0).toUpperCase() + page.slice(1);
+  document.getElementById("menu").classList.remove("open");
+
+  if(page === "rooster") renderRooster();
+  if(page === "cijfers") renderCijfers();
+  if(page === "huiswerk") renderHuiswerk();
+  if(page === "berichten") renderBerichten();
+  if(page === "aanwezigheid") renderAanwezigheid();
+  if(page === "student") renderStudent();
+}
+
+function adminButton(type){
+  if(currentUser.role !== "admin") return "";
+  return `<div class="card"><button onclick="adminForm('${type}')">Toevoegen</button></div>`;
+}
+
+function renderRooster(){
+  let html = adminButton("rooster");
+
+  data.rooster.forEach(x => {
+    html += `
+      <div class="date">${x.date}</div>
+      <div class="card">
+        <b>${x.time}</b><br>
+        ${x.title}<br>
+        <span class="room">${x.room}</span>
+      </div>
+    `;
+  });
+
+  document.getElementById("content").innerHTML = html;
+}
+
+function renderCijfers(){
+  let html = adminButton("cijfers");
+
+  data.cijfers.forEach(x => {
+    html += `
+      <div class="card">
+        <b>${x.vak}</b><br>
+        ${x.toets}<br>
+        Cijfer: <b>${x.cijfer}</b>
+      </div>
+    `;
+  });
+
+  document.getElementById("content").innerHTML = html;
+}
+
+function renderHuiswerk(){
+  let html = "";
+
+  data.huiswerk.forEach(x => {
+    html += `
+      <div class="card">
+        <b>${x.vak}</b><br>
+        ${x.opdracht}
+      </div>
+    `;
+  });
+
+  document.getElementById("content").innerHTML = html;
+}
+
+function renderBerichten(){
+  let html = "";
+
+  data.berichten.forEach(x => {
+    html += `
+      <div class="card">
+        <b>${x.titel}</b><br>
+        ${x.tekst}
+      </div>
+    `;
+  });
+
+  document.getElementById("content").innerHTML = html;
+}
+
+function renderAanwezigheid(){
+  document.getElementById("content").innerHTML = `
+    <div class="card profile">
+      <h2>Aanwezigheid</h2>
+
+      <div class="circle">
+        <div class="circle-inner">84%</div>
+      </div>
+
+      <p><b>84%</b> aanwezig</p>
+      <p><b>16%</b> afwezig geoorloofd</p>
+    </div>
+
+    <div class="card">
+      <div class="info-title">Aanwezig:</div>
+      84%
+    </div>
+
+    <div class="card">
+      <div class="info-title">Afwezig geoorloofd:</div>
+      16%
+    </div>
+  `;
+}
+
+function renderStudent(){
+  document.getElementById("content").innerHTML = `
+    <div class="card profile">
+      <label for="pfpInput">
+        <img id="pfp" src="https://via.placeholder.com/120" alt="Profielfoto">
+      </label>
+
+      <input type="file" id="pfpInput" style="display:none" accept="image/*" onchange="changePfp(event)">
+
+      <h2>Anna Maria Elismparidou</h2>
+    </div>
+
+    <div class="card">
+      <div class="info-title">Naam:</div>
+      Anna Maria Elismparidou
+    </div>
+
+    <div class="card">
+      <div class="info-title">Adres:</div>
+      Lizststraat 312<br>
+      2551TN Den Haag
+    </div>
+
+    <div class="card">
+      <div class="info-title">Telefoonnummer:</div>
+      +31685794745
+    </div>
+
+    <div class="card">
+      <div class="info-title">E-mail:</div>
+      elisbaridou@gmail.com
+    </div>
+
+    <div class="card">
+      <div class="info-title">SLB’er:</div>
+      P. Van der Plas<br>
+      K. Valkenduinen
+    </div>
+  `;
+
+  let savedPhoto = localStorage.getItem("profilePhoto");
+  if(savedPhoto){
+    document.getElementById("pfp").src = savedPhoto;
+  }
+}
+
+function changePfp(event){
+  const file = event.target.files[0];
+
+  if(file){
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+      document.getElementById("pfp").src = e.target.result;
+      localStorage.setItem("profilePhoto", e.target.result);
+    };
+
+    reader.readAsDataURL(file);
+  }
+}
+
+function adminForm(type){
+  if(type === "rooster"){
+    document.getElementById("content").innerHTML = `
+      <div class="card">
+        <h3>Rooster toevoegen</h3>
+        <input id="date" placeholder="Datum">
+        <input id="time" placeholder="Tijd">
+        <input id="title" placeholder="Les">
+        <input id="room" placeholder="Lokaal">
+        <button onclick="addRooster()">Opslaan</button>
+      </div>
+    `;
+  }
+
+  if(type === "cijfers"){
+    document.getElementById("content").innerHTML = `
+      <div class="card">
+        <h3>Cijfer toevoegen</h3>
+        <input id="vak" placeholder="Vak">
+        <input id="toets" placeholder="Toets">
+        <input id="cijfer" placeholder="Cijfer">
+        <button onclick="addCijfer()">Opslaan</button>
+      </div>
+    `;
+  }
+}
+
+function addRooster(){
+  data.rooster.push({
+    date: document.getElementById("date").value,
+    time: document.getElementById("time").value,
+    title: document.getElementById("title").value,
+    room: document.getElementById("room").value
+  });
+
+  showPage("rooster");
+}
+
+function addCijfer(){
+  data.cijfers.push({
+    vak: document.getElementById("vak").value,
+    toets: document.getElementById("toets").value,
+    cijfer: document.getElementById("cijfer").value
+  });
+
+  showPage("cijfers");
+}
+
+function toggleMenu(){
+  document.getElementById("menu").classList.toggle("open");
+}
+
+function logout(){
+  currentUser = null;
+
+  document.getElementById("app").style.display = "none";
+  document.getElementById("login").style.display = "flex";
+
+  document.getElementById("username").value = "";
+  document.getElementById("password").value = "";
+}
+</script>
+
+</body>
+</html>
